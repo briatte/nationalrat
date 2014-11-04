@@ -1,0 +1,1 @@
+Cosponsorship networks from bills passed in the [national chamber](http://www.parlament.gv.at/) of the Austrian Parliament. Replicate the plots by running `make.r` in R, or see the [interactive visualization](http://briatte.org/nationalrat/).
