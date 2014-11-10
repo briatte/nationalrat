@@ -14,7 +14,11 @@ library(tnet)
 library(rgexf)
 library(XML)
 
+dir.create("data", showWarnings = FALSE)
 dir.create("photos", showWarnings = FALSE)
+dir.create("plots", showWarnings = FALSE)
+dir.create("raw", showWarnings = FALSE)
+
 root = "http://www.parlament.gv.at"
 sponsors = "data/sponsors.csv"
 
