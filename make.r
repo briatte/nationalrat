@@ -100,7 +100,7 @@ for(ii in unique(bills$legislature)) {
   n %v% "sex" = as.character(sp[ network.vertex.names(n), "sex" ])
   n %v% "born" = as.numeric(substr(sp[ network.vertex.names(n), "born" ], 1, 4))
   n %v% "party" = sp[ network.vertex.names(n), "party" ]
-  # n %v% "nyears" = s[ network.vertex.names(n), "nyears" ]
+  n %v% "nyears" = sp[ network.vertex.names(n), "nyears" ]
   n %v% "photo" = as.character(sp[ network.vertex.names(n), "photo" ])
   
   network::set.edge.attribute(n, "source", as.character(edges[, 1]))
@@ -250,9 +250,9 @@ for(ii in unique(bills$legislature)) {
   
 }
 
-save(list = ls(pattern = "^(net|edges|bills)_at\\d{2}$"), file = "data/net_at.rda")
-
 if(gexf)
-  zip("net_at.zip", dir(pattern = "^net_\\w+\\.gexf$"))
+  zip("net_at.zip", dir(pattern = "^net_at_\\d{2}\\.gexf$"))
+
+save(list = ls(pattern = "^(net|edges|bills)_at\\d{2}$"), file = "data/net_at.rda")
 
 # kthxbye

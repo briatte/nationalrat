@@ -140,7 +140,7 @@ for(i in 1:nrow(k)) {
 s = unique(s[, c("id", "name", "legislature", "party", "sex", "born", "photo") ])
 
 # imputed seniority
-s$nyears = ddply(s, .(id), transform, nyears = 5 * 1:length(id))
+s = ddply(s, .(id), transform, nyears = 5 * 1:length(id))
 
 # after applying party fixes, this yields nothing
 for(j in unique(s$legislature)[ unique(s$legislature) > 19 ]) {
