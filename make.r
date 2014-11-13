@@ -251,7 +251,7 @@ for(ii in unique(bills$legislature)) {
 }
 
 if(gexf)
-  zip("net_at.zip", dir(pattern = "^net_at_\\d{2}\\.gexf$"))
+  zip("net_at.zip", dir(pattern = "^net_at\\d{2}\\.gexf$"))
 
 save(list = ls(pattern = "^(net|edges|bills)_at\\d{2}$"), file = "data/net_at.rda")
 
