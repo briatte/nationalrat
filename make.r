@@ -117,7 +117,7 @@ for(ii in unique(bills$legislature)) {
   nn = graph.edgelist(as.matrix(edges[, 1:2 ]), directed = FALSE)
   E(nn)$weight = edges[, 3]
   
-  i = s[ V(nn)$name, "party" ]
+  i = sp[ V(nn)$name, "party" ]
   # ignoring: small group Team Stronach
   i[ i %in% c("STRONACH") ] = NA
   
