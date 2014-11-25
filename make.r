@@ -30,14 +30,18 @@ leg = c("XII" = 12, "XIII" = 13, "XIV" = 14, "XV" = 15, "XVI" = 16,
         "XXII" = 22, "XXIII" = 23, "XXIV" = 24, "XXV" = 25)
 
 colors = c(
-  "GRÜNE" = "#4DAF4A", # Die Grünen – Die Grüne Alternative, green
-  "SPÖ" = "#E41A1C", # Sozialdemokratische Partei Österreichs, red
-  "NEOS" = "#F781BF", # NEOS – Das Neue Österreich, pink (party color: magenta)
-  "L" = "#FFFF33",  # Liberales Forum, LiF, yellow
-  "ÖVP" = "#444444", # Österreichische Volkspartei, dark grey (party color: black)
-  "STRONACH" = "#984EA3", # purple
-  "BZÖ" = "#FF7F00", # Bündnis Zukunft Österreich, orange
-  "FPÖ" = "#377EB8") # Freiheitliche Partei Österreichs, blue
+  # Left
+  "GRÜNE"    = "#4DAF4A", # Die Grünen – Die Grüne Alternative     -- green
+  "SPÖ"      = "#E41A1C", # Sozialdemokratische Partei Österreichs -- red
+  # Centre
+  "NEOS"     = "#C51B7D", # NEOS – Das Neue Österreich             -- magenta
+  "LIF"      = "#FFFF33", # Liberales Forum, LiF                   -- yellow
+  # Right
+  "ÖVP"      = "#444444", # Österreichische Volkspartei            -- dark grey (party color: black)
+  "BZÖ"      = "#FF7F00", # Bündnis Zukunft Österreich             -- orange
+  # Other
+  "STRONACH" = "#F781BF", # Team Stronach                          -- pink (party colors: red, white)
+  "FPÖ"      = "#377EB8") # Freiheitliche Partei Österreichs       -- blue
 order = names(colors)
 
 source("antrage.r")
@@ -100,6 +104,7 @@ for(ii in unique(bills$legislature)) {
   n %v% "sex" = as.character(sp[ network.vertex.names(n), "sex" ])
   n %v% "born" = as.numeric(substr(sp[ network.vertex.names(n), "born" ], 1, 4))
   n %v% "party" = sp[ network.vertex.names(n), "party" ]
+  n %v% "partyname" = sp[ network.vertex.names(n), "partyname" ]
   n %v% "nyears" = sp[ network.vertex.names(n), "nyears" ]
   n %v% "photo" = as.character(sp[ network.vertex.names(n), "photo" ])
   
@@ -118,13 +123,13 @@ for(ii in unique(bills$legislature)) {
   E(nn)$weight = edges[, 3]
   
   i = sp[ V(nn)$name, "party" ]
-  # ignoring: small group Team Stronach
-  i[ i %in% c("STRONACH") ] = NA
+  i[ i %in% c("STRONACH") ] = NA # ignoring: small group Team Stronach
   
   nn = nn - which(is.na(i))
   i = as.numeric(factor(i[ !is.na(i) ]))
   
   n %n% "modularity" = modularity(nn, membership = i, weights = E(nn)$weight)
+  cat("\nModularity:", round(n %n% "modularity", 2))
   
   walktrap = lapply(1:50, function(x) walktrap.community(nn, steps = x))
   
@@ -133,10 +138,12 @@ for(ii in unique(bills$legislature)) {
   walktrap = walktrap[[ maxwalks ]]
   
   n %n% "modularity_walktrap" = modularity(walktrap)
+  cat(" Walktrap:", round(n %n% "modularity_walktrap", 2))
   
   louvain = multilevel.community(nn)
   
   n %n% "modularity_louvain" = modularity(louvain)
+  cat(" Louvain:", round(n %n% "modularity_louvain", 2))
   
   # weighted adjacency matrix to tnet
   tnet = as.tnet(as.sociomatrix(n, attrname = "weight"), type = "weighted one-mode tnet")
@@ -151,12 +158,15 @@ for(ii in unique(bills$legislature)) {
   
   n %v% "degree" = wdeg$degree
   n %n% "degree" = mean(wdeg$degree, na.rm = TRUE)
+  cat("\nDegree:", round(n %n% "degree", 2))
   
   n %v% "distance" = wdeg$distance
   n %n% "distance" = mean(wdeg$distance, na.rm = TRUE)
+  cat(" Distance:", round(n %n% "distance", 2))
   
   n %v% "clustering" = wdeg$clustering    # local
   n %n% "clustering" = clustering_w(tnet) # global
+  cat(" Clustering:", round(n %n% "clustering", 2))
   
   i = colors[ sp[ n %e% "source", "party" ] ]
   j = colors[ sp[ n %e% "target", "party" ] ]
@@ -189,9 +199,11 @@ for(ii in unique(bills$legislature)) {
                            guides(size = FALSE, color = guide_legend(override.aes = list(alpha = 1/3, size = 6))))
     
     ggsave(paste0("plots/net_at", ii, ".pdf"), 
-           g + theme(legend.key = element_blank()), width = 10, height = 9)
+           g + theme(legend.key = element_blank()),
+           width = 10, height = 9)
     ggsave(paste0("plots/net_at", ii, ".jpg"),
-           g + theme(legend.position = "none"), width = 9, height = 9)
+           g + theme(legend.position = "none"),
+           width = 9, height = 9, dpi = 150)
     
   }
   
@@ -209,7 +221,7 @@ for(ii in unique(bills$legislature)) {
                 keywords = "parliament, austria")
     
     node.att = data.frame(url = n %v% "url",
-                          party = n %v% "party",
+                          party = n %v% "partyname",
                           bills = n %v% "n_bills",
                           distance = round(n %v% "distance", 1),
                           photo = n %v% "photo",

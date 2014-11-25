@@ -121,8 +121,9 @@ k$legisl[ k$party == "FPÖ" & k$name == "Mag. Gernot Darmann" ] = "XXV"
 # small bug for Dr. Christoph Matznetter
 k$party[ k$party == "MAS" ] = "SPÖ"
 
-# final simplification, merge F and FPÖ
+# final simplifications, merge F and FPÖ...
 k$party[ k$party == "F" ] = "FPÖ"
+k$party[ k$party == "L" ] = "LIF" # ... and use three-letter abbr. for LiF
 
 k$legisl = gsub("\\.", "", k$legisl)
 
@@ -151,3 +152,14 @@ for(j in unique(s$legislature)[ unique(s$legislature) > 19 ]) {
 
 # last visual check
 # View(reshape::sort_df(s, c("name", "legislature")))
+
+# party names
+s$partyname = NA
+s$partyname[ s$party == "BZÖ" ] = "BZÖ – Bündnis Zukunft Österreich"
+s$partyname[ s$party == "FPÖ" ] = "FPÖ – Freiheitliche Partei Österreichs"
+s$partyname[ s$party == "GRÜNE" ] = "Die Grünen"
+s$partyname[ s$party == "LIF" ] = "LiF – Liberales Forum"
+s$partyname[ s$party == "NEOS" ] = "NEOS – Das Neue Österreich"
+s$partyname[ s$party == "ÖVP" ] = "ÖVP – Österreichische Volkspartei"
+s$partyname[ s$party == "SPÖ" ] = "SPÖ – Sozialdemokratische Partei Österreichs"
+s$partyname[ s$party == "STRONACH" ] = "Team Stronach"
