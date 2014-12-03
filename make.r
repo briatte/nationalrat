@@ -63,7 +63,8 @@ for(ii in unique(bills$legislature)) {
     w = paste0("id_", unlist(strsplit(d, ";")))
     d = s$name[ s$id %in% w ]
     
-    d = subset(expand.grid(d, d), Var1 != Var2)
+    # d = subset(expand.grid(d, d), Var1 != Var2)
+    d = subset(expand.grid(Var1 = d[1], Var2 = d[-1], stringsAsFactors = FALSE), Var1 != Var2)
     d = unique(apply(d, 1, function(x) paste0(sort(x), collapse = "_")))
     
     if(length(d))
