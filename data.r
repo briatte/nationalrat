@@ -1,3 +1,60 @@
+root = "http://www.parlament.gv.at"
+sponsors = "data/sponsors.csv"
+antrage = "data/antrage.csv" # bills
+
+leg = c("XII" = 12, "XIII" = 13, "XIV" = 14, "XV" = 15, "XVI" = 16,
+        "XVII" = 17, "XVIII" = 18, "XIX" = 19, "XX" = 20, "XXI" = 21,
+        "XXII" = 22, "XXIII" = 23, "XXIV" = 24, "XXV" = 25)
+
+# parse bills (selbständige Anträge)
+
+if(!file.exists(antrage)) {
+  
+  bills = data.frame()
+  for(i in paste0("XX", c("", "I", "II", "III", "IV", "V"))) {
+    
+    h = htmlParse(paste0(root, "/PAKT/RGES/index.shtml?AS=ALLE&GBEZ=&AUS=ALLE&requestId=&ALT=&anwenden=Anwenden&LISTE=&NRBR=NR&RGES=A&FR=ALLE&STEP=&listeId=103&GP=", i, "&SUCH=&pageNumber=&VV=&FBEZ=FP_003&xdocumentUri=%2FPAKT%2FRGES%2Findex.shtml&jsMode="))
+    t = readHTMLTable(h, stringsAsFactors = FALSE)[[1]][ -1, c(-2, -5) ]
+    names(t) = c("date", "title", "ref")
+    t$url = unique(xpathSApply(h, "//table[@class='tabelle filter']/*/*/a[contains(@href, '/A/')]/@href"))
+    bills = rbind(cbind(legislature = i, t), bills)
+    
+  }
+  bills$date = strptime(bills$date, "%d.%m.%Y")
+  bills$sponsors = NA
+  write.csv(bills, antrage)
+  
+}
+
+bills = read.csv(antrage, stringsAsFactors = FALSE)
+
+# parse sponsor lists (run twice to solve network issues)
+
+u = bills$url[ is.na(bills$sponsors) ]
+for(i in rev(u)) {
+  
+  cat(sprintf("%4.0f", which(u == i)), i)
+  h = try(htmlParse(paste0(root, i)), silent = TRUE)
+  if(!"try-error" %in% class(h)) {
+    j = xpathSApply(h, "//div[@class='c_2']//a[contains(@href, 'WWER')]/@href")
+    bills$sponsors[ bills$url == i ] = paste0(gsub("\\D", "", j), collapse=";")
+    cat(":", length(j), "sponsor(s)\n")
+  } else {
+    cat(": failed\n")
+  }
+  
+}
+
+# roughly a third of all bills are cosponsored
+
+cat(nrow(bills), "bills", sum(grepl(";", bills$sponsors)), "sponsored\n")
+print(table(bills$legislature, grepl(";", bills$sponsors)))
+
+write.csv(bills, antrage, row.names = FALSE)
+
+bills$n_au = 1 + str_count(bills$sponsors, ";")
+bills$legislature = leg[ bills$legislature ]
+
 # parse sponsors
 
 j = unique(unlist(strsplit(bills$sponsors, ";")))
@@ -21,7 +78,7 @@ for(i in rev(j)) {
   
   if(!file.info(f)$size)
     file.remove(f)
-
+  
   h = try(htmlParse(f), silent = TRUE)
   
   if(!"try-error" %in% class(h)) {
@@ -54,9 +111,9 @@ for(i in rev(j)) {
         h = try(download.file(paste0(root, photo), pic, mode = "wb", quiet = TRUE), silent = TRUE)
       # else
       #  cat("\n")
-
+      
       if("try-error" %in% class(h) | !file.info(pic)$size) {
-      #  cat(":: pic failed\n")
+        #  cat(":: pic failed\n")
         file.remove(pic)
         pic = NA
       }
@@ -130,6 +187,18 @@ k$legisl = gsub("\\.", "", k$legisl)
 k = unique(k)
 write.csv(k, sponsors, row.names = FALSE)
 
+# transform mandate years into list
+for(i in k$id) {
+  # cat(i, ":", length(k$mandate[ k$id == i ]), "rows")
+  m = as.numeric(unlist(str_extract_all(k$mandate[ k$id == i ], "[0-9]{4}")))
+  if(length(m) == 1)
+    m = c(m, 2014)
+  # cat(":", paste0(seq(min(m), max(m)), collapse = ";"), "\n")
+  # print(subset(k, id == i))
+  k$mandate[ k$id == i ] = paste0(seq(min(m), max(m)), collapse = ";")
+}
+
+# expand dataset to one row per legislature (for party transitions)
 s = data.frame()
 for(i in 1:nrow(k)) {
   m = unlist(strsplit(k$legisl[ i ], "–"))
@@ -138,10 +207,7 @@ for(i in 1:nrow(k)) {
   s = rbind(s, data.frame(k[ i, ], legislature = m, stringsAsFactors = FALSE))
 }
 
-s = unique(s[, c("id", "name", "legislature", "party", "sex", "born", "photo") ])
-
-# imputed seniority
-s = ddply(s, .(id), transform, nyears = 5 * 1:length(id))
+s = unique(s[, c("id", "name", "legislature", "party", "mandate", "sex", "born", "photo") ])
 
 # after applying party fixes, this yields nothing
 for(j in unique(s$legislature)[ unique(s$legislature) > 19 ]) {
@@ -150,16 +216,7 @@ for(j in unique(s$legislature)[ unique(s$legislature) > 19 ]) {
     print(r[ r$name %in% r$name[ duplicated(r$name) ], ])
 }
 
-# last visual check
-# View(reshape::sort_df(s, c("name", "legislature")))
+# last check
+# reshape::sort_df(s, c("name", "legislature"))
 
-# party names
-s$partyname = NA
-s$partyname[ s$party == "BZÖ" ] = "BZÖ – Bündnis Zukunft Österreich"
-s$partyname[ s$party == "FPÖ" ] = "FPÖ – Freiheitliche Partei Österreichs"
-s$partyname[ s$party == "GRÜNE" ] = "Die Grünen"
-s$partyname[ s$party == "LIF" ] = "LiF – Liberales Forum"
-s$partyname[ s$party == "NEOS" ] = "NEOS – Das Neue Österreich"
-s$partyname[ s$party == "ÖVP" ] = "ÖVP – Österreichische Volkspartei"
-s$partyname[ s$party == "SPÖ" ] = "SPÖ – Sozialdemokratische Partei Österreichs"
-s$partyname[ s$party == "STRONACH" ] = "Team Stronach"
+# kthxbye
