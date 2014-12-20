@@ -11,7 +11,7 @@ for(ii in unique(bills$legislature)) {
   
   cat(":", nrow(data), "cosponsored documents, ")
   
-  edges = rbind.fill(lapply(data$sponsors, function(d) {
+  edges = rbind_all(lapply(data$sponsors, function(d) {
     
     w = paste0("id_", unlist(strsplit(d, ";")))
     
