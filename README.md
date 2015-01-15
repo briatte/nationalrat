@@ -26,7 +26,7 @@ The networks are very sparse (0.01 < _d_ < 0.03) and show an odd case of dissort
 
 ## Sponsors
 
-The sponsors data has one row per legislature in which the sponsor sat, which allows to keep track of party transitions like the move from FPÖ to BZÖ for several MPs after the 1999 legislative election (Haider).
+The sponsors data have multiple entries for each sponsor (more or less one per legislature in which the sponsor sat), which allows to keep track of party transitions like the move from FPÖ to BZÖ for several MPs after the 1999 legislative election (Haider). Sponsors who sat in multiple legislatures without changing parties are grouped on a single row.
 
 - `id` -- numeric id, preceded by "id_"; points to the profile URL
 - `name` -- full name, with titles like "Dr." or "Mag."
@@ -36,3 +36,5 @@ The sponsors data has one row per legislature in which the sponsor sat, which al
 - `sex` -- gender (F/M), imputed from title ("Abgeordnete/r")
 - `born` -- year of birth (stored as character)
 - `photo` -- photo URL, a variation of the profile URL stored in `id`
+
+Note -- constituency is not scraped because it is present only for the current legislature.
