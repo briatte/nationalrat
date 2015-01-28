@@ -1,6 +1,6 @@
 root = "http://www.parlament.gv.at"
 sponsors = "data/sponsors.csv"
-antrage = "data/antrage.csv" # bills
+bills = "data/bills.csv" # bills
 
 leg = c("XII" = 12, "XIII" = 13, "XIV" = 14, "XV" = 15, "XVI" = 16,
         "XVII" = 17, "XVIII" = 18, "XIX" = 19, "XX" = 20, "XXI" = 21,
@@ -8,36 +8,36 @@ leg = c("XII" = 12, "XIII" = 13, "XIV" = 14, "XV" = 15, "XVI" = 16,
 
 # parse bills (selbständige Anträge)
 
-if(!file.exists(antrage)) {
+if(!file.exists(bills)) {
   
-  bills = data.frame()
+  b = data.frame()
   for(i in paste0("XX", c("", "I", "II", "III", "IV", "V"))) {
     
     h = htmlParse(paste0(root, "/PAKT/RGES/index.shtml?AS=ALLE&GBEZ=&AUS=ALLE&requestId=&ALT=&anwenden=Anwenden&LISTE=&NRBR=NR&RGES=A&FR=ALLE&STEP=&listeId=103&GP=", i, "&SUCH=&pageNumber=&VV=&FBEZ=FP_003&xdocumentUri=%2FPAKT%2FRGES%2Findex.shtml&jsMode="))
     t = readHTMLTable(h, stringsAsFactors = FALSE)[[1]][ -1, c(-2, -5) ]
     names(t) = c("date", "title", "ref")
     t$url = unique(xpathSApply(h, "//table[@class='tabelle filter']/*/*/a[contains(@href, '/A/')]/@href"))
-    bills = rbind(cbind(legislature = i, t), bills)
+    b = rbind(cbind(legislature = i, t), b)
     
   }
-  bills$date = strptime(bills$date, "%d.%m.%Y")
-  bills$sponsors = NA
-  write.csv(bills, antrage)
+  b$date = strptime(b$date, "%d.%m.%Y")
+  b$sponsors = NA
+  write.csv(b, bills, row.names = FALSE)
   
 }
 
-bills = read.csv(antrage, stringsAsFactors = FALSE)
+b = read.csv(bills, stringsAsFactors = FALSE)
 
 # parse sponsor lists (run twice to solve network issues)
 
-u = bills$url[ is.na(bills$sponsors) ]
+u = b$url[ is.na(b$sponsors) ]
 for(i in rev(u)) {
   
   cat(sprintf("%4.0f", which(u == i)), i)
   h = try(htmlParse(paste0(root, i)), silent = TRUE)
   if(!"try-error" %in% class(h)) {
     j = xpathSApply(h, "//div[@class='c_2']//a[contains(@href, 'WWER')]/@href")
-    bills$sponsors[ bills$url == i ] = paste0(gsub("\\D", "", j), collapse=";")
+    b$sponsors[ b$url == i ] = paste0(gsub("\\D", "", j), collapse=";")
     cat(":", length(j), "sponsor(s)\n")
   } else {
     cat(": failed\n")
@@ -47,17 +47,17 @@ for(i in rev(u)) {
 
 # roughly a third of all bills are cosponsored
 
-cat(nrow(bills), "bills", sum(grepl(";", bills$sponsors)), "sponsored\n")
-print(table(bills$legislature, grepl(";", bills$sponsors)))
+cat(nrow(b), "bills", sum(grepl(";", b$sponsors)), "sponsored\n")
+print(table(b$legislature, grepl(";", b$sponsors)))
 
-write.csv(bills, antrage, row.names = FALSE)
+write.csv(b, bills, row.names = FALSE)
 
-bills$n_au = 1 + str_count(bills$sponsors, ";")
-bills$legislature = leg[ bills$legislature ]
+b$n_au = 1 + str_count(b$sponsors, ";")
+b$legislature = leg[ b$legislature ]
 
 # parse sponsors
 
-j = unique(unlist(strsplit(bills$sponsors, ";")))
+j = unique(unlist(strsplit(b$sponsors, ";")))
 
 if(!file.exists(sponsors)) {
   k = data.frame()
@@ -215,8 +215,5 @@ for(j in unique(s$legislature)[ unique(s$legislature) > 19 ]) {
   if(sum(duplicated(r$name)))
     print(r[ r$name %in% r$name[ duplicated(r$name) ], ])
 }
-
-# last check
-# reshape::sort_df(s, c("name", "legislature"))
 
 # kthxbye

@@ -6,8 +6,12 @@ years = c("20" = 1995, "21" = 1999, "22" = 2002, "23" = 2006, "24" = 2008, "25" 
 for(ii in unique(bills$legislature)) {
   
   cat(ii)
+  
   data = subset(bills, legislature == ii & n_au > 1)
   sp = subset(s, legislature == ii)
+  
+  u = unlist(strsplit(data$sponsors, ";"))
+  stopifnot(paste0("id_", u) %in% sp$id)
   
   cat(":", nrow(data), "cosponsored documents, ")
   
@@ -156,4 +160,5 @@ for(ii in unique(bills$legislature)) {
 if(gexf)
   zip("net_at.zip", dir(pattern = "^net_at\\d{2}\\.gexf$"))
 
-save(list = ls(pattern = "^(net|edges|bills)_at\\d{2}$"), file = "data/net_at.rda")
+save(list = ls(pattern = "^(net|edges|bills)_at\\d{2}$"), 
+     file = "data/net_at.rda")
