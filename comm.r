@@ -54,6 +54,7 @@ for(i in unique(comm$legislature)) {
   
   m = comm[ comm$legislature == i, names(comm) %in% names(sp) ]
   cat(":", nrow(m), "committees", ncol(m), "MPs")
+  M = m
   
   m = t(as.matrix(m)) # sponsors in rows, committees in columns
   m = m %*% t(m) # adjacency matrix
@@ -84,6 +85,8 @@ for(i in unique(comm$legislature)) {
 
   n %e% "committee" = e$committee
   assign(paste0("net_at", i), n)
+  
+  nn %n% "committees" = as.table(rowSums(M))
   assign(paste0("conet_at", i), nn)
   
 }
