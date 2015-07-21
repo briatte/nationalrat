@@ -1,7 +1,8 @@
 This repository contains code to build cosponsorship networks from bills passed in the [lower/national chamber](http://www.parlament.gv.at/) of the Austrian Parliament.
 
-- [interactive demo](http://briatte.org/nationalrat)
-- [static plots](http://briatte.org/nationalrat/plots.html)
+- [interactive demo](http://f.briatte.org/parlviz/nationalrat)
+- [static plots](http://f.briatte.org/parlviz/nationalrat/plots.html)
+- [more countries](https://github.com/briatte/parlnet)
 
 # HOWTO
 
