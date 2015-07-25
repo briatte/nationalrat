@@ -59,12 +59,7 @@ b$legislature = leg[ b$legislature ]
 
 j = unique(unlist(strsplit(b$sponsors, ";")))
 
-if(!file.exists(sponsors)) {
-  k = data.frame()
-} else {
-  k = read.csv(sponsors, stringsAsFactors = FALSE)
-  j = j[ !j %in% k$id ]
-}
+k = data.frame()
 
 cat("\nParsing", length(j), "sponsors...\n")
 for(i in rev(j)) {
@@ -82,6 +77,12 @@ for(i in rev(j)) {
   h = try(htmlParse(f), silent = TRUE)
   
   if(!"try-error" %in% class(h)) {
+    
+    kreis = xpathSApply(h, "//li[contains(text(), 'Wahlkreis')]", xmlValue)
+    kreis = ifelse(!length(kreis), NA, gsub("Wahlkreis: \\d\\w? – ", "", kreis))
+    
+    federal = xpathSApply(h, "//li[contains(text(), 'Bundeswahlvorschlag')]", xmlValue)
+    federal = ifelse(!length(federal), 0, 1)
     
     name = xpathSApply(h, "//h1[@id='inhalt']", xmlValue)
     
@@ -127,8 +128,12 @@ for(i in rev(j)) {
     
     ## cat(":", name, "\n")
     k = rbind(k, unique(data.frame(id = paste0("id_", i),
-                                   name, born, sex, party, party_full = party, mandate, legisl,
-                                   photo = gsub("photos/|\\.jpg", "" , pic))))
+                                   name, born, sex,
+                                   kreis, federal,
+                                   party, party_full = party,
+                                   mandate, legisl,
+                                   photo = gsub("photos/|\\.jpg", "" , pic),
+                                   stringsAsFactors = FALSE)))
     
   } else {
     
@@ -137,6 +142,18 @@ for(i in rev(j)) {
   }
   
 }
+
+# constituencies to Wikipedia handles
+k$kreis = gsub("–", "-", k$kreis)
+k$kreis = paste0(ifelse(k$kreis %in% c("Burgenland", "Kärnten",
+                                       "Niederösterreich", "Oberösterreich",
+                                       "Salzburg", "Steiermark", "Tirol",
+                                       "Vorarlberg", "Wien"),
+                        "Landeswahlkreis", "Regionalwahlkreis"), " ",
+                 k$kreis)
+k$kreis[ k$kreis == "Regionalwahlkreis Hausruckviertel" ] = "Hausruckviertel"
+k$kreis[ k$kreis == "Regionalwahlkreis NA" ] = NA
+k$kreis[ k$federal ] = "Bundeswahlvorschlag" # federal-level lists
 
 # fix extra text from replacement of retired MPs and other details
 k$party = gsub("(.*)(Eingetret|Mandatszuweisung|Dasdadurch)(.*)", "\\1", k$party)
@@ -207,7 +224,7 @@ for(i in 1:nrow(k)) {
   s = rbind(s, data.frame(k[ i, ], legislature = m, stringsAsFactors = FALSE))
 }
 
-s = unique(s[, c("id", "name", "legislature", "party", "mandate", "sex", "born", "photo") ])
+s = unique(s[, c("id", "name", "legislature", "party", "mandate", "kreis", "sex", "born", "photo") ])
 
 # after applying party fixes, this yields nothing
 for(j in unique(s$legislature)[ unique(s$legislature) > 19 ]) {

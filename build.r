@@ -100,6 +100,7 @@ for(ii in unique(b$legislature)) {
   n %v% "born" = as.numeric(substr(sp[ network.vertex.names(n), "born" ], 1, 4))
   n %v% "party" = sp[ network.vertex.names(n), "party" ]
   n %v% "partyname" = as.character(groups[ n %v% "party" ])
+  n %v% "constituency" = as.character(sp[ network.vertex.names(n), "kreis" ])
   n %v% "lr" = as.numeric(scores[ n %v% "party" ])
   # mandate years done up to start year of legislature
   sp$nyears = sapply(sp$mandate, function(x) {
@@ -146,7 +147,7 @@ for(ii in unique(b$legislature)) {
   #
   
   if(gexf)
-    save_gexf(paste0("net_at", ii), n, meta, mode, colors)
+    save_gexf(paste0("net_at", ii), n, meta, mode, colors, extra = "constituency")
   
 }
 
