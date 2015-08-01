@@ -10,13 +10,19 @@ leg = c("XII" = 12, "XIII" = 13, "XIV" = 14, "XV" = 15, "XVI" = 16,
 
 if(!file.exists(bills)) {
   
-  b = data.frame()
+  b = data_frame()
   for(i in paste0("XX", c("", "I", "II", "III", "IV", "V"))) {
     
-    h = htmlParse(paste0(root, "/PAKT/RGES/index.shtml?AS=ALLE&GBEZ=&AUS=ALLE&requestId=&ALT=&anwenden=Anwenden&LISTE=&NRBR=NR&RGES=A&FR=ALLE&STEP=&listeId=103&GP=", i, "&SUCH=&pageNumber=&VV=&FBEZ=FP_003&xdocumentUri=%2FPAKT%2FRGES%2Findex.shtml&jsMode="))
+    f = paste0("raw/bill-lists/bills-", i, ".html")
+    
+    if(!file.exists(f))
+      download.file(paste0(root, "/PAKT/RGES/index.shtml?AS=ALLE&GBEZ=&AUS=ALLE&requestId=&ALT=&anwenden=Anwenden&LISTE=&NRBR=NR&RGES=A&FR=ALLE&STEP=&listeId=103&GP=", i, "&SUCH=&pageNumber=&VV=&FBEZ=FP_003&xdocumentUri=%2FPAKT%2FRGES%2Findex.shtml&jsMode="), f, mode = "wb", quiet = TRUE)
+    
+    h = htmlParse(f)
     t = readHTMLTable(h, stringsAsFactors = FALSE)[[1]][ -1, c(-2, -5) ]
     names(t) = c("date", "title", "ref")
     t$url = unique(xpathSApply(h, "//table[@class='tabelle filter']/*/*/a[contains(@href, '/A/')]/@href"))
+    
     b = rbind(cbind(legislature = i, t), b)
     
   }
@@ -34,15 +40,26 @@ u = b$url[ is.na(b$sponsors) ]
 for(i in rev(u)) {
   
   cat(sprintf("%4.0f", which(u == i)), i)
-  h = try(htmlParse(paste0(root, i)), silent = TRUE)
-  if(!"try-error" %in% class(h)) {
+  
+  f = gsub("/PAKT/VHG/(\\w+)/A/(.*)/index.shtml", "raw/bill-pages/bill-\\1-\\2.html", i)
+  if(!file.exists(f))
+    download.file(paste0(root, i), f, mode = "wb", quiet = TRUE)
+  
+  if(!file.info(f)$size) {
+    
+    cat(": failed\n")
+    file.remove(f)
+    
+  } else {
+    
+    h = htmlParse(f)
     j = xpathSApply(h, "//div[@class='c_2']//a[contains(@href, 'WWER')]/@href")
+    
     b$sponsors[ b$url == i ] = paste0(gsub("\\D", "", j), collapse=";")
     cat(":", length(j), "sponsor(s)\n")
-  } else {
-    cat(": failed\n")
+    
   }
-  
+
 }
 
 # roughly a third of all bills are cosponsored
@@ -57,9 +74,9 @@ b$legislature = leg[ b$legislature ]
 
 # parse sponsors
 
-j = unique(unlist(strsplit(b$sponsors, ";")))
+j = unique(unlist(strsplit(b$sponsors, ";"))) %>% na.omit
 
-k = data.frame()
+k = data_frame()
 
 cat("\nParsing", length(j), "sponsors...\n")
 for(i in rev(j)) {
@@ -67,7 +84,7 @@ for(i in rev(j)) {
   u = paste0(root, "/WWER/PAD_", i, "/index.shtml")
   # cat(sprintf("%4.0f", which(j == i)), u)
   
-  f = paste0("raw/", i, ".html")
+  f = paste0("raw/mp-pages/mp-", i, ".html")
   if(!file.exists(f))
     try(download.file(u, f, quiet = TRUE), silent = TRUE)
   
@@ -127,13 +144,14 @@ for(i in rev(j)) {
     }
     
     ## cat(":", name, "\n")
-    k = rbind(k, unique(data.frame(id = paste0("id_", i),
-                                   name, born, sex,
-                                   kreis, federal,
-                                   party, party_full = party,
-                                   mandate, legisl,
-                                   photo = gsub("photos/|\\.jpg", "" , pic),
-                                   stringsAsFactors = FALSE)))
+    k = rbind(k, unique(data_frame(
+      id = paste0("id_", i),
+      name, born, sex,
+      kreis, federal,
+      party, party_full = party,
+      mandate, legisl,
+      photo = gsub("photos/|\\.jpg", "" , pic)
+    )))
     
   } else {
     
@@ -164,7 +182,7 @@ k$party_full = k$party
 # party fixes (Austrian politicians like to split just before elections...)
 
 # legislature XV (25, 2013-), merged in 2014
-k$party[ k$party == "NEOS-LIF" ] = "NEOS"
+k$party[ k$party == "NEOS-LIF" | grepl("^NEOS", k$party) ] = "NEOS"
 
 # legislature XXII (22, 2002-2006-), split a few months before 2006 election
 k$party[ k$party == "F-BZÖ" ] = "F"
@@ -185,6 +203,12 @@ k$party[ k$party == "INDEP" & k$name == "Peter Rosenstingl" ] = "F"
 
 # F/FPÖ and then BZÖ, independent for only two months while transiting
 k$party[ k$party == "INDEP" & k$name == "Mag. Ewald Stadler" ] = "FPÖ"
+
+# STRONACH from 2013 election to June 2015, then split to ÖVP
+k$party[ k$party == "ÖVP" & k$name == "Dr. Marcus Franz" ] = "STRONACH"
+
+# STRONACH from 2013 election to June 2015, then split to ÖVP
+k$party[ k$party == "ÖVP" & k$name == "Dr. Georg Vetter" ] = "STRONACH"
 
 # simplified situation: L, and then F one year after 1996 election
 k$legisl[ k$party == "F" & k$name == "Mag. Reinhard Firlinger" ] = "XXI"

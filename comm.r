@@ -6,7 +6,7 @@ comm = data.frame()
 # find unique committees
 
 cat("Parsing committees")
-for(i in dir("raw", pattern = "html$", full.names = TRUE)) {
+for(i in list.files("raw/mp-pages", full.names = TRUE)) {
   
   h = htmlParse(i)
   l = xpathSApply(h, "//td[@class='biogr_am_ausschuss']//a/@href")
@@ -28,11 +28,11 @@ cat(":", nrow(comm), "unique categories\n")
 # match to sponsors
 # using URLs: same-name committees have different memberships over time
 
-for(i in dir("raw", pattern = "html$", full.names = TRUE)) {
+for(i in list.files("raw/mp-pages", full.names = TRUE)) {
   
   h = htmlParse(i)
   l = xpathSApply(h, "//td[@class='biogr_am_ausschuss']//a/@href")
-  comm[, paste0("id_", gsub("raw/|\\.html", "", i)) ] = as.numeric(comm$l %in% l)
+  comm[, paste0("id_", gsub("raw/mp-pages/mp-|\\.html", "", i)) ] = as.numeric(comm$l %in% l)
   
 }
 
