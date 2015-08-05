@@ -15,13 +15,13 @@ colors = c(
 
 groups = c(
   "GRÜNE"    = "Die Grünen",
-  "SPÖ"      = "SPÖ – Sozialdemokratische Partei Österreichs",
-  "LIF"      = "LiF – Liberales Forum",
-  "NEOS"     = "NEOS – Das Neue Österreich",
+  "SPÖ"      = "Sozialdemokratische Partei Österreichs",
+  "LIF"      = "Liberales Forum",
+  "NEOS"     = "Das Neue Österreich",
   "STRONACH" = "Team Stronach",
-  "ÖVP"      = "ÖVP – Österreichische Volkspartei",
-  "FPÖ"      = "FPÖ – Freiheitliche Partei Österreichs",
-  "BZÖ"      = "BZÖ – Bündnis Zukunft Österreich"
+  "ÖVP"      = "Österreichische Volkspartei",
+  "FPÖ"      = "Freiheitliche Partei Österreichs",
+  "BZÖ"      = "Bündnis Zukunft Österreich"
 )
 
 # ParlGov Left/Right scores
@@ -37,5 +37,5 @@ scores = c(
   "BZÖ"      = 8.8
 )
 
+stopifnot(names(colors) == names(groups))
 stopifnot(names(colors) == names(scores))
-order = names(colors)[ order(scores) ]

@@ -8,14 +8,14 @@ leg = c("XII" = 12, "XIII" = 13, "XIV" = 14, "XV" = 15, "XVI" = 16,
 
 # parse bills (selbständige Anträge)
 
-if(!file.exists(bills)) {
+if (!file.exists(bills)) {
   
   b = data_frame()
-  for(i in paste0("XX", c("", "I", "II", "III", "IV", "V"))) {
+  for (i in paste0("XX", c("", "I", "II", "III", "IV", "V"))) {
     
     f = paste0("raw/bill-lists/bills-", i, ".html")
     
-    if(!file.exists(f))
+    if (!file.exists(f))
       download.file(paste0(root, "/PAKT/RGES/index.shtml?AS=ALLE&GBEZ=&AUS=ALLE&requestId=&ALT=&anwenden=Anwenden&LISTE=&NRBR=NR&RGES=A&FR=ALLE&STEP=&listeId=103&GP=", i, "&SUCH=&pageNumber=&VV=&FBEZ=FP_003&xdocumentUri=%2FPAKT%2FRGES%2Findex.shtml&jsMode="), f, mode = "wb", quiet = TRUE)
     
     h = htmlParse(f)
@@ -37,15 +37,15 @@ b = read.csv(bills, stringsAsFactors = FALSE)
 # parse sponsor lists (run twice to solve network issues)
 
 u = b$url[ is.na(b$sponsors) ]
-for(i in rev(u)) {
+for (i in rev(u)) {
   
   cat(sprintf("%4.0f", which(u == i)), i)
   
   f = gsub("/PAKT/VHG/(\\w+)/A/(.*)/index.shtml", "raw/bill-pages/bill-\\1-\\2.html", i)
-  if(!file.exists(f))
+  if (!file.exists(f))
     download.file(paste0(root, i), f, mode = "wb", quiet = TRUE)
   
-  if(!file.info(f)$size) {
+  if (!file.info(f)$size) {
     
     cat(": failed\n")
     file.remove(f)
@@ -79,21 +79,21 @@ j = unique(unlist(strsplit(b$sponsors, ";"))) %>% na.omit
 k = data_frame()
 
 cat("\nParsing", length(j), "sponsors...\n")
-for(i in rev(j)) {
+for (i in rev(j)) {
   
   u = paste0(root, "/WWER/PAD_", i, "/index.shtml")
   # cat(sprintf("%4.0f", which(j == i)), u)
   
   f = paste0("raw/mp-pages/mp-", i, ".html")
-  if(!file.exists(f))
+  if (!file.exists(f))
     try(download.file(u, f, quiet = TRUE), silent = TRUE)
   
-  if(!file.info(f)$size)
+  if (!file.info(f)$size)
     file.remove(f)
   
   h = try(htmlParse(f), silent = TRUE)
   
-  if(!"try-error" %in% class(h)) {
+  if (!"try-error" %in% class(h)) {
     
     kreis = xpathSApply(h, "//li[contains(text(), 'Wahlkreis')]", xmlValue)
     kreis = ifelse(!length(kreis), NA, gsub("Wahlkreis: \\d\\w? – ", "", kreis))
@@ -117,20 +117,21 @@ for(i in rev(j)) {
     legisl = gsub("\\(|\\)|GP|\\.\\s", "", str_extract(nfo, "\\((.*) GP\\)"))
     
     # photo
-    photo = unique(xpathSApply(h, "//div[contains(@class, 'teaserPortraitLarge')]//img[contains(@src, 'WWER')]/@src"))
-    if(!is.null(photo)) {
+    photo = unique(xpathSApply(h, paste0("//div[contains(@class, 'teaserPortraitLarge')]",
+                                         "//img[contains(@src, 'WWER')]/@src")))
+    if (!is.null(photo)) {
       
       pic = gsub("_WWER_PAD_|\\.jpg", "", gsub("/", "_", photo))
       pic = unique(paste0("photos/", gsub("_180$|_384$", "", pic), ".jpg"))
-      # if(length(photo) > 1)
+      # if (length(photo) > 1)
       #  print(photo)
       
-      if(!file.exists(pic))
+      if (!file.exists(pic))
         h = try(download.file(paste0(root, photo), pic, mode = "wb", quiet = TRUE), silent = TRUE)
       # else
       #  cat("\n")
       
-      if("try-error" %in% class(h) | !file.info(pic)$size) {
+      if ("try-error" %in% class(h) | !file.info(pic)$size) {
         #  cat(":: pic failed\n")
         file.remove(pic)
         pic = NA
@@ -146,11 +147,12 @@ for(i in rev(j)) {
     ## cat(":", name, "\n")
     k = rbind(k, unique(data_frame(
       id = paste0("id_", i),
+      url = u,
       name, born, sex,
       kreis, federal,
       party, party_full = party,
       mandate, legisl,
-      photo = gsub("photos/|\\.jpg", "" , pic)
+      photo = pic # gsub("photos/|\\.jpg", "" , pic)
     )))
     
   } else {
@@ -160,6 +162,12 @@ for(i in rev(j)) {
   }
   
 }
+
+k$born = as.integer(k$born)
+
+# ==============================================================================
+# CHECK CONSTITUENCIES
+# ==============================================================================
 
 # constituencies to Wikipedia handles
 k$kreis = gsub("–", "-", k$kreis)
@@ -172,6 +180,23 @@ k$kreis = paste0(ifelse(k$kreis %in% c("Burgenland", "Kärnten",
 k$kreis[ k$kreis == "Regionalwahlkreis Hausruckviertel" ] = "Hausruckviertel"
 k$kreis[ k$kreis == "Regionalwahlkreis NA" ] = NA
 k$kreis[ k$federal ] = "Bundeswahlvorschlag" # federal-level lists
+k$kreis = gsub("\\s", "_", k$kreis)
+
+cat("Checking constituencies,", sum(is.na(k$kreis)), "missing...\n")
+for (i in na.omit(unique(k$kreis))) {
+  
+  g = GET(paste0("https://", meta[ "lang"], ".wikipedia.org/wiki/", i))
+  
+  if (status_code(g) != 200)
+    cat("Missing Wikipedia entry:", i, "\n")
+  
+  g = xpathSApply(htmlParse(g), "//title", xmlValue)
+  g = gsub("(.*) – Wikipedia(.*)", "\\1", g)
+  
+  if (gsub("\\s", "_", g) != i)
+    cat("Discrepancy:", g, "(WP) !=", i ,"(data)\n")
+  
+}
 
 # fix extra text from replacement of retired MPs and other details
 k$party = gsub("(.*)(Eingetret|Mandatszuweisung|Dasdadurch)(.*)", "\\1", k$party)
@@ -229,10 +254,10 @@ k = unique(k)
 write.csv(k, sponsors, row.names = FALSE)
 
 # transform mandate years into list
-for(i in k$id) {
+for (i in k$id) {
   # cat(i, ":", length(k$mandate[ k$id == i ]), "rows")
   m = as.numeric(unlist(str_extract_all(k$mandate[ k$id == i ], "[0-9]{4}")))
-  if(length(m) == 1)
+  if (length(m) == 1)
     m = c(m, 2014)
   # cat(":", paste0(seq(min(m), max(m)), collapse = ";"), "\n")
   # print(subset(k, id == i))
@@ -240,21 +265,44 @@ for(i in k$id) {
 }
 
 # expand dataset to one row per legislature (for party transitions)
-s = data.frame()
-for(i in 1:nrow(k)) {
+s = data_frame()
+for (i in 1:nrow(k)) {
   m = unlist(strsplit(k$legisl[ i ], "–"))
   # stopifnot(all(m %in% names(leg))) ## checked, minimum is XII
   m = seq(from = min(leg[ m ]), to = max(leg[ m ]))
   s = rbind(s, data.frame(k[ i, ], legislature = m, stringsAsFactors = FALSE))
 }
 
-s = unique(s[, c("id", "name", "legislature", "party", "mandate", "kreis", "sex", "born", "photo") ])
+s = unique(s[, c("id", "name", "legislature", "party", "mandate", "kreis", "sex", "born", "url", "photo") ])
 
 # after applying party fixes, this yields nothing
-for(j in unique(s$legislature)[ unique(s$legislature) > 19 ]) {
+for (j in unique(s$legislature)[ unique(s$legislature) > 19 ]) {
   r = subset(s, legislature == j)
-  if(sum(duplicated(r$name)))
+  if (sum(duplicated(r$name)))
     print(r[ r$name %in% r$name[ duplicated(r$name) ], ])
 }
+
+# ============================================================================
+# QUALITY CONTROL
+# ============================================================================
+
+# - might be missing: born (int of length 4), constituency (chr),
+#   photo (chr, folder/file.ext)
+# - never missing: sex (chr, F/M), nyears (int), url (chr, URL),
+#   party (chr, mapped to colors)
+
+cat("Missing", sum(is.na(s$born)), "years of birth\n")
+stopifnot(is.integer(s$born) & nchar(s$born) == 4 | is.na(s$born))
+
+cat("Missing", sum(is.na(s$kreis)), "constituencies\n")
+stopifnot(is.character(s$kreis))
+
+cat("Missing", sum(is.na(s$photo)), "photos\n")
+stopifnot(is.character(s$photo) & grepl("^photos(_\\w{2})?/(.*)\\.\\w{3}", s$photo) | is.na(s$photo))
+
+stopifnot(!is.na(s$sex) & s$sex %in% c("F", "M"))
+# stopifnot(!is.na(s$nyears) & is.integer(s$nyears)) # computed on the fly
+stopifnot(!is.na(s$url) & grepl("^http(s)?://(.*)", s$url))
+stopifnot(s$party %in% names(colors))
 
 # kthxbye

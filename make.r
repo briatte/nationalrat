@@ -19,6 +19,15 @@ dir.create("raw/mp-pages"   , showWarnings = FALSE)
 
 plot = TRUE
 gexf = TRUE
+mode = "fruchtermanreingold"
+meta = c(
+  "cty" = "Austria",
+  "lang" = "de", # Wikipedia language for chamber and constituencies
+  "ch" = "Nationalrat_(Österreich)",
+  "type" = "Lower",
+  "ipu" = 2017,
+  "seats" = 183
+)
 
 # build routine
 
