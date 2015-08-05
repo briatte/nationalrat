@@ -4,7 +4,7 @@ years = c("20" = "1995", "21" = "1999", "22" = "2002", "23" = "2006",
 
 for (ii in b$legislature %>% unique %>% sort) {
   
-  cat(ii)
+  cat("\nLegislature", ii, "years", years[ as.character(ii) ], "-", years[ as.character(ii + 1) ])
   
   data = subset(b, legislature == ii & n_au > 1)
   sp = subset(s, legislature == ii)

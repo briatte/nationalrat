@@ -82,12 +82,12 @@ for (i in unique(comm$legislature)) {
   stopifnot(!is.na(nn %e% "committee"))
 
   n %e% "committee" = e$committee
-  assign(paste0("net_at", i), n)
+  assign(paste0("net_at", years[ as.character(i) ]), n)
   
   nn %n% "committees" = as.table(rowSums(M))
-  assign(paste0("conet_at", i), nn)
+  assign(paste0("conet_at", years[ as.character(i) ]), nn)
   
 }
 
-save(list = ls(pattern = "^((co)?net|edges|bills)_at\\d{2}$"), 
+save(list = ls(pattern = "^((co)?net|edges|bills)_at\\d{4}$"), 
      file = "data/net_at.rda")
