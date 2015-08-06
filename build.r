@@ -1,4 +1,3 @@
-
 years = c("20" = "1995", "21" = "1999", "22" = "2002", "23" = "2006",
           "24" = "2008", "25" = "2013", "26" = "2018")
 
@@ -14,6 +13,10 @@ for (ii in b$legislature %>% unique %>% sort) {
   
   cat(":", nrow(data), "cosponsored documents, ")
   
+  # ============================================================================
+  # DIRECTED EDGE LIST
+  # ============================================================================
+	
   edges = bind_rows(lapply(data$sponsors, function(d) {
     
     w = paste0("id_", unlist(strsplit(d, ";")))
@@ -25,9 +28,9 @@ for (ii in b$legislature %>% unique %>% sort) {
     
   }))
   
-  #
-  # edge weights
-  #
+  # ============================================================================
+  # EDGE WEIGHTS
+  # ============================================================================
   
   # first author self-loops, with counts of cosponsors
   self = subset(edges, i == j)
@@ -68,9 +71,9 @@ for (ii in b$legislature %>% unique %>% sort) {
   
   cat(nrow(edges), "edges, ")
   
-  #
-  # directed network
-  #
+  # ============================================================================
+  # DIRECTED NETWORK
+  # ============================================================================
   
   n = network(edges[, 1:2 ], directed = TRUE)
   
@@ -85,8 +88,13 @@ for (ii in b$legislature %>% unique %>% sort) {
   
   n %n% "n_cosponsored" = nrow(data)
   n %n% "n_sponsors" = table(subset(b, legislature == ii)$n_au)
-  
+
+  # ============================================================================
+  # VERTEX-LEVEL ATTRIBUTES
+  # ============================================================================
+
   n_au = as.vector(n_au[ network.vertex.names(n) ])
+
   n %v% "n_au" = ifelse(is.na(n_au), 0, n_au)
   
   n_co = as.vector(n_co[ network.vertex.names(n) ])
@@ -119,9 +127,9 @@ for (ii in b$legislature %>% unique %>% sort) {
   set.edge.attribute(n, "nfw", edges$nfw) # Newman-Fowler weights
   set.edge.attribute(n, "gsw", edges$gsw) # Gross-Shalizi weights
     
-  #
-  # network plot
-  #
+  # ============================================================================
+  # SAVE PLOTS
+  # ============================================================================
     
   if (plot) {
     
@@ -132,17 +140,17 @@ for (ii in b$legislature %>% unique %>% sort) {
     
   }
   
-  #
-  # save objects
-  #
+  # ============================================================================
+  # SAVE OBJECTS
+  # ============================================================================
   
   assign(paste0("net_at", years[ as.character(ii) ]), n)
   assign(paste0("edges_at", years[ as.character(ii) ]), edges)
   assign(paste0("bills_at", years[ as.character(ii) ]), data)
   
-  #
-  # export gexf
-  #
+  # ============================================================================
+  # SAVE GEXF
+  # ============================================================================
   
   if (gexf)
     save_gexf(n, paste0("net_at", years[ as.character(ii) ], "-", years[ as.character(ii + 1) ]), 
@@ -152,6 +160,3 @@ for (ii in b$legislature %>% unique %>% sort) {
 
 if (gexf)
   zip("net_at.zip", dir(pattern = "^net_at\\d{4}-\\d{4}\\.gexf$"))
-
-save(list = ls(pattern = "^(net|edges|bills)_at\\d{4}$"), 
-     file = "data/net_at.rda")
