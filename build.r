@@ -16,7 +16,7 @@ for (ii in b$legislature %>% unique %>% sort) {
   # ============================================================================
   # DIRECTED EDGE LIST
   # ============================================================================
-	
+  
   edges = bind_rows(lapply(data$sponsors, function(d) {
     
     w = paste0("id_", unlist(strsplit(d, ";")))
