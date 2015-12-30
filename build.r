@@ -1,12 +1,13 @@
-years = c("20" = "1995", "21" = "1999", "22" = "2002", "23" = "2006",
-          "24" = "2008", "25" = "2013", "26" = "2018")
+# note: for l. XX, election in Dec. 1995, leg. started in Jan. 1996
+years = c("19" = "1994", "20" = "1995", "21" = "1999", "22" = "2002",
+          "23" = "2006", "24" = "2008", "25" = "2013", "26" = "2018")
 
 for (ii in b$legislature %>% unique %>% sort) {
   
   cat("\nLegislature", ii, "years", years[ as.character(ii) ], "-", years[ as.character(ii + 1) ])
   
   data = subset(b, legislature == ii & n_au > 1)
-  sp = subset(s, legislature == ii)
+  sp = subset(s, leg[ legislature ] == ii) %>% data.frame
   
   u = unlist(strsplit(data$sponsors, ";"))
   stopifnot(paste0("id_", u) %in% sp$id)
@@ -17,7 +18,7 @@ for (ii in b$legislature %>% unique %>% sort) {
   # DIRECTED EDGE LIST
   # ============================================================================
   
-  edges = bind_rows(lapply(data$sponsors, function(d) {
+  edges = lapply(data$sponsors, function(d) {
     
     w = paste0("id_", unlist(strsplit(d, ";")))
     
@@ -26,7 +27,7 @@ for (ii in b$legislature %>% unique %>% sort) {
     
     return(data.frame(d, w = length(w) - 1)) # number of cosponsors
     
-  }))
+  }) %>% bind_rows
   
   # ============================================================================
   # EDGE WEIGHTS
@@ -111,12 +112,8 @@ for (ii in b$legislature %>% unique %>% sort) {
   n %v% "born" = sp[ network.vertex.names(n), "born" ]
   n %v% "party" = sp[ network.vertex.names(n), "party" ]
   n %v% "partyname" = groups[ n %v% "party" ] %>% as.character
-  n %v% "constituency" = sp[ network.vertex.names(n), "kreis" ]
+  n %v% "constituency" = sp[ network.vertex.names(n), "constituency" ]
   n %v% "lr" = scores[ n %v% "party" ] %>% as.numeric
-  # mandate years done up to start year of legislature
-  sp$nyears = sapply(sp$mandate, function(x) {
-    sum(unlist(strsplit(x, ";")) <= as.numeric(years[ as.character(ii) ]))
-  })
   n %v% "nyears" = sp[ network.vertex.names(n), "nyears" ] %>% as.integer
   n %v% "photo" = sp[ network.vertex.names(n), "photo" ]
   

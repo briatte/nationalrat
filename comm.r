@@ -9,10 +9,14 @@ for (i in list.files("raw/mp-pages", full.names = TRUE)) {
   
   h = htmlParse(i)
   l = xpathSApply(h, "//td[@class='biogr_am_ausschuss']//a/@href")
-  y = gsub("/PAKT/VHG/(\\w+)/(.*)", "\\1", l)
-  n = xpathSApply(h, "//td[@class='biogr_am_ausschuss']//a", xmlValue)
-  n = str_clean(n)
-  comm = rbind(comm, data_frame(y, n, l))
+  if (length(l)) {
+    
+    y = gsub("/PAKT/VHG/(\\w+)/(.*)", "\\1", l)
+    n = xpathSApply(h, "//td[@class='biogr_am_ausschuss']//a", xmlValue)
+    n = str_clean(n)
+    comm = rbind(comm, data_frame(y, n, l))
+    
+  }
   
 }
 
@@ -43,13 +47,13 @@ names(comm)[1:3] = c("legislature", "committee", "url")
 write.csv(cbind(comm[, 1:3 ], members = rowSums(comm[, -1:-3 ])), 
           "data/committees.csv", row.names = FALSE)
 
-# assign co-memberships to networks
+# assign co-memberships to networks (no data for l. XIX)
 for (i in unique(comm$legislature)) {
   
   cat("Legislature", i)
   
-  sp = s$name[ s$legislature == i ]
-  names(sp) = s$id[ s$legislature == i ]
+  sp = s$name[ leg[ s$legislature ] == i ]
+  names(sp) = s$id[ leg[ s$legislature ] == i ]
   
   m = comm[ comm$legislature == i, names(comm) %in% names(sp) ]
   cat(":", nrow(m), "committees", ncol(m), "MPs")
